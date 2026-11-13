@@ -60,6 +60,10 @@ function home() {
 }
 
 function lesson(page) {
+  if (page.id === "multiplication") {
+    multiplicationLesson(page);
+    return;
+  }
   main.innerHTML = heading(page.title, page.ktp, page.lead)
     + `<p class="formula">${page.formula}</p><div id="demo" class="demo"></div>
     <div class="grid"><article class="card def"><h3>Как работает формула</h3><p>${page.theory}</p></article>
@@ -67,8 +71,7 @@ function lesson(page) {
     <div class="mistake"><h3>Типичная ошибка</h3><p>${page.mistake}</p></div>
     <h2>Задачи</h2><p class="hint">Вводите обычную дробь, десятичное число или проценты.</p>`
     + page.tasks.map(taskView).join("");
-  if (page.id === "multiplication") treeDemo();
-  else diceDemo(page.id === "conditional");
+  diceDemo(page.id === "conditional");
 }
 
 function diceDemo(conditional) {
@@ -387,6 +390,60 @@ function challenge() {
   ];
   main.innerHTML = heading("Сложные задачи", "Практика", "В этих задачах нужно сочетать несколько правил. Ответ можно ввести дробью, десятичным числом или процентами.")
     + '<div style="margin-top:20px">' + problems.map(taskView).join("") + '</div>';
+}
+
+function multiplicationLesson(page) {
+  main.innerHTML = heading(page.title, page.ktp, "В корзине три жёлтых и два синих шара. Какова вероятность вытащить два жёлтых подряд?")
+    + `<section class="demo">
+      <img src="balls.webp" width="960" height="375" alt="Корзина, три жёлтых и два синих шара" style="display:block;width:100%;height:auto;max-width:620px;border-radius:12px">
+      <h2 style="margin-top:18px">Проследите путь двух жёлтых шаров</h2>
+      <div class="controls"><label>Первый шар <select id="return-mode"><option value="no">Не возвращаем</option><option value="yes">Возвращаем</option></select></label>
+      <button class="primary" id="draw-step">Вытянуть первый жёлтый</button></div>
+      <div id="draw-visual" aria-hidden="true"></div><div id="draw-explanation" role="status"></div>
+    </section>
+    <details class="card" style="margin-top:16px"><summary>Формула и частая ошибка</summary>
+      <p class="formula">${page.formula}</p>
+      <p>Здесь A означает «первый шар жёлтый», B — «второй шар жёлтый». После первого вытягивания пересчитайте, сколько жёлтых шаров осталось и сколько шаров всего.</p>
+      <p>При возврате второй выбор снова делаем из трёх жёлтых и двух синих. Без возврата повторно использовать 3/5 будет ошибкой.</p>
+    </details><h2>Задачи</h2>` + page.tasks.map(taskView).join("");
+
+  const mode = main.querySelector("#return-mode");
+  const next = main.querySelector("#draw-step");
+  const visual = main.querySelector("#draw-visual");
+  const explanation = main.querySelector("#draw-explanation");
+  const buttonLabels = ["Вытянуть первый жёлтый", "Вытянуть второй жёлтый", "Начать заново"];
+  let step = 0;
+
+  function paint() {
+    const returned = mode.value === "yes";
+    const second = returned ? "3/5" : "2/4";
+    const yellow = 3 - (returned ? Number(step === 2) : step);
+    const ball = '<span class="die hit">🟡</span>';
+    visual.innerHTML = '<strong>В корзине</strong><div class="outcomes">'
+      + '<span class="die">🟡</span>'.repeat(yellow)
+      + '<span class="die">🔵</span>'.repeat(2) + '</div>'
+      + (step ? '<strong>Вытянули по порядку</strong><div class="outcomes">' + ball.repeat(step) + '</div>' : '');
+    const firstStep = returned
+      ? 'Первый жёлтый вернули. Перед вторым выбором в корзине снова 3 жёлтых из 5.'
+      : 'Первый жёлтый отложили. Перед вторым выбором в корзине осталось 2 жёлтых из 4.';
+    const messages = [
+      'Первый выбор: 3 жёлтых из 5 шаров. Вероятность 3/5.',
+      firstStep + ' Вероятность второго жёлтого при этом условии — ' + second + '.',
+      'Оба вытягивания должны дать жёлтый шар. Умножаем: 3/5 × ' + second + ' = ' + (returned ? '9/25 = 36%.' : '3/10 = 30%.')
+    ];
+    explanation.innerHTML = '<p class="formula">' + messages[step] + '</p>';
+    next.textContent = buttonLabels[step];
+  }
+
+  next.addEventListener("click", () => {
+    step = (step + 1) % 3;
+    paint();
+  });
+  mode.addEventListener("change", () => {
+    step = 0;
+    paint();
+  });
+  paint();
 }
 
 navigate();
